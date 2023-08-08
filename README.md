@@ -1,5 +1,7 @@
 # xyz2svg
 
+Lightweight script to make vector images of molecules
+
 ## Requirements
 - `python>=3.6`
 - [briling/v](https://github.com/briling/v) or something capable of printing atom positions and connectivity
@@ -39,14 +41,14 @@ We can add a hydrogen bond between atoms 1–5:
 ```
 bond 1 5 -1
 ```
-(see [input/kj-H2O_1--H3O+.inp]). Then 
+(see [input/kj-H2O_1--H3O+.inp](input/kj-H2O_1--H3O+.inp)). Then 
 ```
 ./mol2svg.py < input/kj-H2O_1--H3O+.inp > figures/kj-H2O_1--H3O+.svg
 ```
-gives
-![vector balls-and-sticks image of a water dimer](figures/kj-H2O_1--H3O+.svg.svg)
+gives<br>
+![vector balls-and-sticks image of a water dimer](figures/kj-H2O_1--H3O+.svg)
 
-One can also add (positive or negative) bond orders ([input/caffeine_v2.inp]):
+One can also add (positive or negative) bond orders ([input/caffeine_v2.inp](input/caffeine_v2.inp)):
 ![vector balls-and-sticks image of caffeine with double bonds](figures/caffeine_v2.svg)
 
 ## Drawing options

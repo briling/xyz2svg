@@ -9,12 +9,12 @@ def parse_arguments(radii):
     p = argparse.ArgumentParser()
     p.add_argument('--num', action='store_true',  help='add atom numbers')
     p.add_argument('--canvas-size', default=80.0, type=float,  help='basic canvas size')
-    p.add_argument('-wa', '--atom-border', default=5.0, type=float,  help='atom stroke')
-    p.add_argument('-wb', '--bond-width', default=5.0, type=float,  help='bond width')
-    p.add_argument('-db', '--bond-distance', default=0.05, type=float,  help='distance between lines in a multiple bond')
-    p.add_argument('-rs', '--atom_size', default=1.0, type=float,  help='scale factor for atom radii')
+    p.add_argument('-wa', '--atom-border', default=5.0, type=float,  help='atom border width (default 5.0)')
+    p.add_argument('-wb', '--bond-width', default=5.0, type=float,  help='bond line width (default 5.0)')
+    p.add_argument('-db', '--bond-distance', default=0.05, type=float,  help='line distance in a multiple bond (default 0.05')
+    p.add_argument('-rs', '--atom_size', default=1.0, type=float,  help='scaling factor for atom radii')
     for i in range(len(radii)):
-        p.add_argument(f'-r{i}', default=None, type=float, help=('-r{q} sets radius for atom {q}' if i==6 else argparse.SUPPRESS))
+        p.add_argument(f'-r{i}', default=None, type=float, help=('-r{q} sets radius for atom {q} in Å' if i==6 else argparse.SUPPRESS))
     args = p.parse_args()
 
     for i in range(len(radii)):

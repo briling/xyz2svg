@@ -15,6 +15,7 @@ def parse_arguments(radii):
     p.add_argument('-rs', '--atom_size', default=1.0, type=float,  help='scaling factor for atom radii')
     for i in range(len(radii)):
         p.add_argument(f'-r{i}', default=None, type=float, help=('-r{q} sets radius for atom {q} in Å' if i==6 else argparse.SUPPRESS))
+    p.add_argument('-g', '--gradient', action='store_true', help='fill atoms with radial gradients')
     args = p.parse_args()
 
     for i in range(len(radii)):
@@ -47,11 +48,12 @@ def parse_arguments(radii):
                           atom=atom_style,
                           bond=bond_style,
                           num=args.num,
-                          canvas_size=args.canvas_size)
+                          canvas_size=args.canvas_size,
+                          grad=args.gradient)
     return par
 
 
-def print_svg(Q, R, bonds, radii, colors, par):
+def print_svg(Q, R, bonds, radii, colors, colors_ini, colors_fin, par):
 
     radmax = max(radii[Q])
     rmin = np.array((min(R[:,0]), min(R[:,1])))
@@ -69,11 +71,22 @@ def print_svg(Q, R, bonds, radii, colors, par):
           f"width=\"{rcanv[0]}\" height=\"{rcanv[1]}\">\n")
 
     print("  <defs>")
-    for q in sorted(set(Q)):
-            print(f'    <g id="atom{q}"> '
-                  f'<circle cx="0" cy="0" r="{abs(radii[q])*a}" '
-                  f'fill="#{colors[q]:06x}" stroke="{par.atom.stroke_color}" stroke-width="{par.atom.stroke*a/132.317536}"/> '
-                  '</g>')
+    if par.grad:
+        for q in sorted(set(Q)):
+                print(f'    <g id="atom{q}"> '
+                      f'<radialGradient id="radGrad{q}" cx="0.5" cy="0.5" fx="0.33" fy="0.33" r="0.66"> '
+                      f'<stop offset="0%" stop-color="#{colors_ini[q]:06x}" /> '
+                      f'<stop offset="100%" stop-color="#{colors_fin[q]:06x} "/> '
+                      f'</radialGradient> '
+                      f'<circle cx="0" cy="0" r="{abs(radii[q])*a}" '
+                      f'fill="url(#radGrad{q})"/>'
+                      '</g>')
+    else:
+        for q in sorted(set(Q)):
+                print(f'    <g id="atom{q}"> '
+                      f'<circle cx="0" cy="0" r="{abs(radii[q])*a}" '
+                      f'fill="#{colors[q]:06x}" stroke="{par.atom.stroke_color}" stroke-width="{par.atom.stroke*a/132.317536}"/> '
+                      '</g>')
     print("  </defs>\n")
 
     if par.num:
@@ -120,7 +133,6 @@ def print_svg(Q, R, bonds, radii, colors, par):
             print(f'  <text x="{ri[0]}" y="{ri[1]}" class="atnum">{i+1}</text>')
 
     print('</svg>')
-
 
 def mol_input():
     data = [*map(lambda x: x.strip().split(), sys.stdin.readlines())]
@@ -173,11 +185,44 @@ def atom_parameters():
                           0xA0A0A0, 0xA0A0A0,
                           0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0,
             ] + [0xA0A0A0]*23
-    return np.array(radii), np.array(colors)
+    colors_ini = [ 0x000000,
+      0xd0d0d0, 0xA0A0A0,
+      0xA0A0A0, 0xA0A0A0, 0xCC22CC, 0x808080, 0x2222FF, 0xFF2222, 0xFF22FF, 0xA0A0A0,
+      0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0x090909, 0x0F0B0B, 0xFFFF22, 0x22FF22, 0xA0A0A0,
+      0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0,
+      0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0,
+      0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0,
+      0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0,
+      0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0,
+                          0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0,
+                          0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0,
+      0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0,
+                          0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0,
+                          0xA0A0A0, 0xA0A0A0,
+                          0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0,
+            ] + [0xA0A0A0]*23
+    colors_fin = [ 0x000000,
+      0x606060, 0x303030,
+      0x303030, 0x303030, 0x552255, 0x202020, 0x000088, 0x880000, 0x880088, 0x303030,
+      0x303030, 0x303030, 0x303030, 0x090909, 0x0F0B0B, 0x888800, 0x008800, 0x303030,
+      0x303030, 0x303030, 0x303030, 0x303030, 0x303030, 0x303030, 0x303030, 0x303030, 0x303030, 0x303030,
+      0x303030, 0x303030, 0x303030, 0x303030, 0x303030, 0x303030, 0x303030, 0x303030,
+      0x303030, 0x303030, 0x303030, 0x303030, 0x303030, 0x303030, 0x303030, 0x303030, 0x303030, 0x303030,
+      0x303030, 0x303030, 0x303030, 0x303030, 0x303030, 0x303030, 0x303030, 0x303030,
+      0x303030, 0x303030, 0x303030, 0x303030, 0x303030, 0x303030, 0x303030, 0x303030, 0x303030,
+                          0x303030, 0x303030, 0x303030, 0x303030, 0x303030, 0x303030, 0x303030,
+                          0x303030, 0x303030, 0x303030, 0x303030, 0x303030, 0x303030, 0x303030, 0x303030,
+      0x303030, 0x303030, 0x303030, 0x303030, 0x303030, 0x303030, 0x303030, 0x303030, 0x303030,
+                          0x303030, 0x303030, 0x303030, 0x303030, 0x303030, 0x303030, 0x303030,
+                          0x303030, 0x303030,
+                          0x303030, 0x303030, 0x303030, 0x303030, 0x303030, 0x303030, 0x303030, 0x303030,
+            ] + [0x303030]*23
+    return np.array(radii), np.array(colors), np.array(colors_ini), np.array(colors_fin)
 
 
 if __name__=='__main__':
-    radii, colors = atom_parameters()
+    radii, colors, colors_ini, colors_fin = atom_parameters()
     parameters = parse_arguments(radii)
     Q, R, bonds = mol_input()
-    print_svg(Q, R, bonds, radii, colors, parameters)
+    print_svg(Q, R, bonds, radii, colors, colors_ini, colors_fin, parameters)
+

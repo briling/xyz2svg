@@ -72,3 +72,10 @@ The same caffeine with options:
 ./mol2svg.py -rs 3.5 -wa 10 -wb 10 -db 0.1 < input/caffeine_v2.inp > figures/caffeine_v3.inp
 ```
 ![vector balls-and-sticks image of caffeine with double bonds and looks nice](figures/caffeine_v3.svg)
+
+
+@iribirii's preudo-3D mode:
+```
+./mol2svg.py -rs 3.5 -wb 10 -g < input/caffeine.inp > figures/caffeine_v4.inp
+```
+![vector balls-and-sticks image of caffeine with a pseudo 3D effect](figures/caffeine_v4.svg)

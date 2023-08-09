@@ -14,7 +14,7 @@ def parse_arguments(radii):
     p.add_argument('-db', '--bond-distance', default=0.05, type=float,  help='line distance in a multiple bond (default 0.05')
     p.add_argument('-rs', '--atom_size', default=1.0, type=float,  help='scaling factor for atom radii')
     for i in range(len(radii)):
-        p.add_argument(f'-r{i}', default=None, type=float, help=('-r{q} sets radius for atom {q} in Å' if i==6 else argparse.SUPPRESS))
+        p.add_argument(f'-r{i}', default=None, type=float, help=('-r{q} sets radius for element {q} in Å' if i==6 else argparse.SUPPRESS))
     p.add_argument('-g', '--gradient', action='store_true', help='fill atoms with radial gradients')
     args = p.parse_args()
 

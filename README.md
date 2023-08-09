@@ -65,7 +65,7 @@ to get help:
   -wb BOND_WIDTH, --bond-width BOND_WIDTH               bond width (default 5.0)
   -db BOND_DISTANCE, --bond-distance BOND_DISTANCE      line distance in multiple bonds (default 0.05)
   -rs ATOM_SIZE, --atom_size ATOM_SIZE                  scaling factor for atom radii
-  -r%d ATOM_%d_RADIUS                                   sets basic radius for a specific atom (in Å)
+  -r%d ATOM_%d_RADIUS                                   sets basic radius for a specific element (in Å)
   -g, --gradient                                        fill atoms with radial gradients (pseudo-3D mode)
 ```
 The same caffeine with options:

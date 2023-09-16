@@ -11,11 +11,13 @@ def parse_arguments(radii):
     p.add_argument('--canvas-size', default=80.0, type=float,  help='basic canvas size')
     p.add_argument('-wa', '--atom-border', default=5.0, type=float,  help='atom border width (default 5.0)')
     p.add_argument('-wb', '--bond-width', default=5.0, type=float,  help='bond line width (default 5.0)')
-    p.add_argument('-db', '--bond-distance', default=0.05, type=float,  help='line distance in a multiple bond (default 0.05')
+    p.add_argument('-db', '--bond-distance', default=0.05, type=float,  help='line distance in a multiple bond (default 0.05)')
     p.add_argument('-rs', '--atom_size', default=1.0, type=float,  help='scaling factor for atom radii')
     for i in range(len(radii)):
         p.add_argument(f'-r{i}', default=None, type=float, help=('-r{q} sets radius for element {q} in Å' if i==6 else argparse.SUPPRESS))
-    p.add_argument('-g', '--gradient', action='store_true', help='fill atoms with radial gradients')
+    p.add_argument('-g',  '--gradient', action='store_true', help='fill atoms with radial gradients')
+    p.add_argument('-fs', '--font-size', default=16, type=int, help='font size (default 16)')
+    p.add_argument('-fn', '--font-name', default='monospace', type=str, help='font name (default monospace)')
     args = p.parse_args()
 
     for i in range(len(radii)):
@@ -34,8 +36,8 @@ def parse_arguments(radii):
             stroke = args.atom_border,
             )
     text_style = SimpleNamespace(
-            font = 'monospace',
-            size = 16.0,
+            font = args.font_name,
+            size = args.font_size,
             stroke = 1.,
             fill_color = '#FFFFFF',
             stroke_color = '#000000',

@@ -53,7 +53,7 @@ def parse_arguments(radii):
     return par
 
 
-def print_svg(Q, R, bonds, radii, colors, colors_ini, colors_fin, par):
+def print_svg(Q, R, bonds, labels, radii, colors, colors_ini, colors_fin, par):
 
     radmax = max(radii[Q])
     rmin = np.array((min(R[:,0]), min(R[:,1])))
@@ -89,7 +89,7 @@ def print_svg(Q, R, bonds, radii, colors, colors_ini, colors_fin, par):
                       '</g>')
     print("  </defs>\n")
 
-    if par.num:
+    if par.num or labels:
         print("  <style>\n"
             "  .atnum {\n"
             f"   font-size:{par.text.size*a/80.0}px;font-style:{par.text.style}; font-weight:{par.text.weight};\n"
@@ -131,6 +131,12 @@ def print_svg(Q, R, bonds, radii, colors, colors_ini, colors_fin, par):
         for i, ri in enumerate(R):
             ri = afactor * (ri-center)
             print(f'  <text x="{ri[0]}" y="{ri[1]}" class="atnum">{i+1}</text>')
+    if labels:
+        print()
+        for i, label in labels:
+            ri = R[i]
+            ri = afactor * (ri-center)
+            print(f'  <text x="{ri[0]}" y="{ri[1]}" class="atnum">{label}</text>')
 
     print('</svg>')
 
@@ -149,7 +155,14 @@ def mol_input():
         order = 1 if len(bond)<=3 else int(bond[3])
         bonds[i,j] = bonds[j,i] = order
 
-    return np.array(Q), np.array(R), bonds
+    labels = []
+    for label in filter(lambda x: x[0]=='label', data):
+        i,text = int(label[1])-1, label[2]
+        labels.append((i, text))
+    if len(labels)==0:
+        labels = None
+
+    return np.array(Q), np.array(R), bonds, labels
 
 
 def atom_parameters():
@@ -223,6 +236,6 @@ def atom_parameters():
 if __name__=='__main__':
     radii, colors, colors_ini, colors_fin = atom_parameters()
     parameters = parse_arguments(radii)
-    Q, R, bonds = mol_input()
-    print_svg(Q, R, bonds, radii, colors, colors_ini, colors_fin, parameters)
+    Q, R, bonds, labels = mol_input()
+    print_svg(Q, R, bonds, labels, radii, colors, colors_ini, colors_fin, parameters)
 

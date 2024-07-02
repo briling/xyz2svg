@@ -16,7 +16,7 @@ def parse_arguments(radii):
     for i in range(len(radii)):
         p.add_argument(f'-r{i}', default=None, type=float, help=('-r{q} sets radius for element {q} in Å' if i==6 else argparse.SUPPRESS))
     p.add_argument('-g',  '--gradient', action='store_true', help='fill atoms with radial gradients')
-    p.add_argument('-fs', '--font-size', default=16, type=int, help='font size (default 16)')
+    p.add_argument('-fs', '--font-size', default=24, type=int, help='font size (default 24)')
     p.add_argument('-fn', '--font-name', default='monospace', type=str, help='font name (default monospace)')
     args = p.parse_args()
 
@@ -38,13 +38,14 @@ def parse_arguments(radii):
     text_style = SimpleNamespace(
             font = args.font_name,
             size = args.font_size,
-            stroke = 1.,
-            fill_color = '#FFFFFF',
-            stroke_color = '#000000',
+            stroke = 8,
+            fill_color = '#000000',
+            stroke_color = '#FFFFFF',
             stroke_opacity = 1.0,
             fill_opacity = 1.0,
             weight = 'bold',
             style = 'normal',
+            paint_order = 'stroke fill markers'
             )
     par = SimpleNamespace(text=text_style,
                           atom=atom_style,
@@ -55,7 +56,13 @@ def parse_arguments(radii):
     return par
 
 
-def print_svg(Q, R, bonds, labels, radii, colors, colors_ini, colors_fin, par):
+def linear_grad(gcolors, value):
+    rgb = gcolors[1]*value + gcolors[0]*(1.0-value)
+    rgb = np.round(rgb).astype(int)
+    return f'{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}'
+
+
+def print_svg(Q, R, bonds, labels, values, radii, colors, colors_ini, colors_fin, par):
 
     radmax = max(radii[Q])
     rmin = np.array((min(R[:,0]), min(R[:,1])))
@@ -67,6 +74,9 @@ def print_svg(Q, R, bonds, labels, radii, colors, colors_ini, colors_fin, par):
     a = par.canvas_size
     afactor = np.array((a, -a, 1.0))
     rcanv = (a*rsize).astype(int)
+
+    gcolors = np.array([[0, 0, 0], [255, 0, 0]])  # TODO
+    rvalues = radii[1] #0.5 * 0.2  # TODO
 
     print("<svg xmlns=\"http://www.w3.org/2000/svg\" "
           "xmlns:xlink=\"http://www.w3.org/1999/xlink\" "
@@ -89,13 +99,21 @@ def print_svg(Q, R, bonds, labels, radii, colors, colors_ini, colors_fin, par):
                       f'<circle cx="0" cy="0" r="{abs(radii[q])*a}" '
                       f'fill="#{colors[q]:06x}" stroke="{par.atom.stroke_color}" stroke-width="{par.atom.stroke*a/132.317536}"/> '
                       '</g>')
+
+    if len(values)>0:
+        print(f'    <g id="values"> '
+              f'<circle cx="0" cy="0" r="{rvalues*a}" '
+              f'stroke="{par.atom.stroke_color}" stroke-width="{par.atom.stroke*a/132.317536}"/> '
+              '</g>')
+        pass
+
     print("  </defs>\n")
 
     if par.num or labels:
         print("  <style>\n"
             "  .atnum {\n"
             f"   font-size:{par.text.size*a/80.0}px;font-style:{par.text.style}; font-weight:{par.text.weight};\n"
-            f"   font-family:'{par.text.font}';\n"
+            f"   font-family:'{par.text.font}'; paint-order:{par.text.paint_order};\n"
             f"   fill:{par.text.fill_color}; fill-opacity:{par.text.fill_opacity}; \n"
             f"   stroke:{par.text.stroke_color};stroke-width:{par.text.stroke*a/80.0}; stroke-opacity:{par.text.stroke_opacity};\n"
             "    text-align:start; writing-mode:lr-tb; text-anchor:start;\n"
@@ -104,6 +122,7 @@ def print_svg(Q, R, bonds, labels, radii, colors, colors_ini, colors_fin, par):
 
 
     for i, I in enumerate(z_order):
+
 
         ri = afactor * (R[I]-center)
         print(f'  <use x="{ri[0]}" y="{ri[1]}" xlink:href="#atom{Q[I]}"/>')
@@ -121,6 +140,7 @@ def print_svg(Q, R, bonds, labels, radii, colors, colors_ini, colors_fin, par):
             ri = afactor * (R[I]-center + rij*abs(radii[Q[I]]))
             rj = afactor * (R[J]-center - rij*abs(radii[Q[J]]))
 
+            #print('xxx', *R[I], *R[J])
             for ib in range(-abs(nb)+1, abs(nb), 2):
                 x1 = ri[0] + rij[1]*ib*a*par.bond.distance
                 y1 = ri[1] + rij[0]*ib*a*par.bond.distance
@@ -139,6 +159,19 @@ def print_svg(Q, R, bonds, labels, radii, colors, colors_ini, colors_fin, par):
             ri = R[i]
             ri = afactor * (ri-center)
             print(f'  <text x="{ri[0]}" y="{ri[1]}" class="atnum">{label}</text>')
+
+
+    if values:
+        z_order = np.argsort([x[0][2] for x in values])
+        maxval = max(map(lambda x: abs(x[-1]), values))
+        for I in z_order:
+            ri, value = values[I]
+            value = value/maxval
+            ri = afactor * (ri-center)
+            mycolor = linear_grad(gcolors, value)
+            print(f'  <use fill="#{mycolor}" x="{ri[0]}" y="{ri[1]}" xlink:href="#values"/>')
+
+
 
     print('</svg>')
 
@@ -164,7 +197,11 @@ def mol_input():
     if len(labels)==0:
         labels = None
 
-    return np.array(Q), np.array(R), bonds, labels
+    values = []
+    for value in filter(lambda x: x[0]=='value', data):
+        values.append(([*map(float, value[1:4])], float(value[4])))
+
+    return np.array(Q), np.array(R), bonds, labels, values
 
 
 def atom_parameters():
@@ -238,6 +275,6 @@ def atom_parameters():
 if __name__=='__main__':
     radii, colors, colors_ini, colors_fin = atom_parameters()
     parameters = parse_arguments(radii)
-    Q, R, bonds, labels = mol_input()
-    print_svg(Q, R, bonds, labels, radii, colors, colors_ini, colors_fin, parameters)
+    Q, R, bonds, labels, values = mol_input()
+    print_svg(Q, R, bonds, labels, values, radii, colors, colors_ini, colors_fin, parameters)
 

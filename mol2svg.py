@@ -11,11 +11,22 @@ def parse_arguments(radii):
     p.add_argument('--canvas-size', default=80.0, type=float,  help='basic canvas size')
     p.add_argument('-wa', '--atom-border', default=5.0, type=float,  help='atom border width (default 5.0)')
     p.add_argument('-wb', '--bond-width', default=5.0, type=float,  help='bond line width (default 5.0)')
-    p.add_argument('-db', '--bond-distance', default=0.05, type=float,  help='line distance in a multiple bond (default 0.05')
+    p.add_argument('-db', '--bond-distance', default=0.05, type=float,  help='line distance in a multiple bond (default 0.05)')
     p.add_argument('-rs', '--atom_size', default=1.0, type=float,  help='scaling factor for atom radii')
     for i in range(len(radii)):
         p.add_argument(f'-r{i}', default=None, type=float, help=('-r{q} sets radius for element {q} in Å' if i==6 else argparse.SUPPRESS))
-    p.add_argument('-g', '--gradient', action='store_true', help='fill atoms with radial gradients')
+    p.add_argument('-g',  '--gradient', action='store_true', help='fill atoms with radial gradients')
+    p.add_argument('-fs', '--font-size', default=24, type=int, help='font size (default 24)')
+    p.add_argument('-fn', '--font-name', default='monospace', type=str, help='font name (default monospace)')
+    p.add_argument('--bond-color', default='black', type=str,  help='bond line color (default black)')
+    p.add_argument('--atom-stroke-color', default='black', type=str,  help='atom stroke color (default black)')
+    p.add_argument('--text-stroke-color', default='#FFFFFF', type=str,  help='text stroke color (default white)')
+    p.add_argument('--text-color', default='#000000', type=str,  help='text fill color (default black)')
+    p.add_argument('--text-weight', default='bold', type=str,  help='text weight (default bold)')
+    p.add_argument('--text-style', default='normal', type=str,  help='text style (default normal)')
+    p.add_argument('--text-stroke-width', default=8, type=int,  help='text stroke width (default 8)')
+    p.add_argument('--value-gradient', nargs=2, default=['#000000', '#FF0000'], type=str, help='starting and finishing colors for value gradient (default ["#000000", "#FF0000"]')
+    p.add_argument('--value-radius', default=0.2, type=float, help='radius of value gradient circles (default 0.2 Å)')
     args = p.parse_args()
 
     for i in range(len(radii)):
@@ -25,35 +36,48 @@ def parse_arguments(radii):
     radii *= args.atom_size * 0.2
 
     bond_style = SimpleNamespace(
-            color = 'black',
+            color = args.bond_color,
             width = args.bond_width,
             distance = args.bond_distance,
             )
     atom_style = SimpleNamespace(
-            stroke_color = 'black',
+            stroke_color = args.atom_stroke_color,
             stroke = args.atom_border,
             )
     text_style = SimpleNamespace(
-            font = 'monospace',
-            size = 16.0,
-            stroke = 1.,
-            fill_color = '#FFFFFF',
-            stroke_color = '#000000',
+            font = args.font_name,
+            size = args.font_size,
+            stroke = args.text_stroke_width,
+            fill_color = args.text_color,
+            stroke_color = args.text_stroke_color,
             stroke_opacity = 1.0,
             fill_opacity = 1.0,
-            weight = 'bold',
-            style = 'normal',
+            weight = args.text_weight,
+            style = args.text_style,
+            paint_order = 'stroke fill markers',
+            )
+    val_grad = SimpleNamespace(
+            gcolors = args.value_gradient,
+            rvalue = args.value_radius * args.atom_size * 0.2,
             )
     par = SimpleNamespace(text=text_style,
                           atom=atom_style,
                           bond=bond_style,
                           num=args.num,
                           canvas_size=args.canvas_size,
-                          grad=args.gradient)
+                          grad=args.gradient,
+                          val_grad=val_grad)
     return par
 
 
-def print_svg(Q, R, bonds, radii, colors, colors_ini, colors_fin, par):
+def linear_grad(gcolors, value):
+    gcolors = np.array([[int(h[i:i+2], 16) for i in (1, 3, 5)] for h in gcolors])
+    rgb = gcolors[1]*value + gcolors[0]*(1.0-value)
+    rgb = np.round(rgb).astype(int)
+    return f'{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}'
+
+
+def print_svg(Q, R, bonds, labels, values, radii, colors, colors_ini, colors_fin, par):
 
     radmax = max(radii[Q])
     rmin = np.array((min(R[:,0]), min(R[:,1])))
@@ -87,13 +111,21 @@ def print_svg(Q, R, bonds, radii, colors, colors_ini, colors_fin, par):
                       f'<circle cx="0" cy="0" r="{abs(radii[q])*a}" '
                       f'fill="#{colors[q]:06x}" stroke="{par.atom.stroke_color}" stroke-width="{par.atom.stroke*a/132.317536}"/> '
                       '</g>')
+
+    if len(values)>0:
+        print(f'    <g id="values"> '
+              f'<circle cx="0" cy="0" r="{par.val_grad.rvalue*a}" '
+              f'stroke="{par.atom.stroke_color}" stroke-width="{par.atom.stroke*a/132.317536}"/> '
+              '</g>')
+        pass
+
     print("  </defs>\n")
 
-    if par.num:
+    if par.num or labels:
         print("  <style>\n"
             "  .atnum {\n"
             f"   font-size:{par.text.size*a/80.0}px;font-style:{par.text.style}; font-weight:{par.text.weight};\n"
-            f"   font-family:'{par.text.font}';\n"
+            f"   font-family:'{par.text.font}'; paint-order:{par.text.paint_order};\n"
             f"   fill:{par.text.fill_color}; fill-opacity:{par.text.fill_opacity}; \n"
             f"   stroke:{par.text.stroke_color};stroke-width:{par.text.stroke*a/80.0}; stroke-opacity:{par.text.stroke_opacity};\n"
             "    text-align:start; writing-mode:lr-tb; text-anchor:start;\n"
@@ -102,6 +134,7 @@ def print_svg(Q, R, bonds, radii, colors, colors_ini, colors_fin, par):
 
 
     for i, I in enumerate(z_order):
+
 
         ri = afactor * (R[I]-center)
         print(f'  <use x="{ri[0]}" y="{ri[1]}" xlink:href="#atom{Q[I]}"/>')
@@ -119,6 +152,7 @@ def print_svg(Q, R, bonds, radii, colors, colors_ini, colors_fin, par):
             ri = afactor * (R[I]-center + rij*abs(radii[Q[I]]))
             rj = afactor * (R[J]-center - rij*abs(radii[Q[J]]))
 
+            #print('xxx', *R[I], *R[J])
             for ib in range(-abs(nb)+1, abs(nb), 2):
                 x1 = ri[0] + rij[1]*ib*a*par.bond.distance
                 y1 = ri[1] + rij[0]*ib*a*par.bond.distance
@@ -131,6 +165,25 @@ def print_svg(Q, R, bonds, radii, colors, colors_ini, colors_fin, par):
         for i, ri in enumerate(R):
             ri = afactor * (ri-center)
             print(f'  <text x="{ri[0]}" y="{ri[1]}" class="atnum">{i+1}</text>')
+    if labels:
+        print()
+        for i, label in labels:
+            ri = R[i]
+            ri = afactor * (ri-center)
+            print(f'  <text x="{ri[0]}" y="{ri[1]}" class="atnum">{label}</text>')
+
+
+    if values:
+        z_order = np.argsort([x[0][2] for x in values])
+        maxval = max(map(lambda x: abs(x[-1]), values))
+        for I in z_order:
+            ri, value = values[I]
+            value = value/maxval
+            ri = afactor * (ri-center)
+            mycolor = linear_grad(par.val_grad.gcolors, value)
+            print(f'  <use fill="#{mycolor}" x="{ri[0]}" y="{ri[1]}" xlink:href="#values"/>')
+
+
 
     print('</svg>')
 
@@ -149,7 +202,18 @@ def mol_input():
         order = 1 if len(bond)<=3 else int(bond[3])
         bonds[i,j] = bonds[j,i] = order
 
-    return np.array(Q), np.array(R), bonds
+    labels = []
+    for label in filter(lambda x: x[0]=='label', data):
+        i,text = int(label[1])-1, label[2]
+        labels.append((i, text))
+    if len(labels)==0:
+        labels = None
+
+    values = []
+    for value in filter(lambda x: x[0]=='value', data):
+        values.append(([*map(float, value[1:4])], float(value[4])))
+
+    return np.array(Q), np.array(R), bonds, labels, values
 
 
 def atom_parameters():
@@ -223,6 +287,6 @@ def atom_parameters():
 if __name__=='__main__':
     radii, colors, colors_ini, colors_fin = atom_parameters()
     parameters = parse_arguments(radii)
-    Q, R, bonds = mol_input()
-    print_svg(Q, R, bonds, radii, colors, colors_ini, colors_fin, parameters)
+    Q, R, bonds, labels, values = mol_input()
+    print_svg(Q, R, bonds, labels, values, radii, colors, colors_ini, colors_fin, parameters)
 

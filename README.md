@@ -84,7 +84,7 @@ The same caffeine with options:
 
 ### Extended input
 
-Add values to atoms
+Add values to atoms, e.g.
 ```
 label 1     0.009
 ```
@@ -95,7 +95,7 @@ to add them as text:
 ![vector balls-and-sticks image with additional text representing value](figures/C3-7-6-7_v2.svg)
 
 
-Add ghost atom coordinates and corresponding values
+Add ghost atom coordinates and corresponding values, e.g.
 ```
 value   4.3721492    1.2190677   -0.9878959    0.009
 ```

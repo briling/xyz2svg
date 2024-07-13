@@ -18,6 +18,15 @@ def parse_arguments(radii):
     p.add_argument('-g',  '--gradient', action='store_true', help='fill atoms with radial gradients')
     p.add_argument('-fs', '--font-size', default=24, type=int, help='font size (default 24)')
     p.add_argument('-fn', '--font-name', default='monospace', type=str, help='font name (default monospace)')
+    p.add_argument('--bond-color', default='black', type=str,  help='bond line color (default black)')
+    p.add_argument('--atom-stroke-color', default='black', type=str,  help='atom stroke color (default black)')
+    p.add_argument('--text-stroke-color', default='#FFFFFF', type=str,  help='text stroke color (default white)')
+    p.add_argument('--text-color', default='#000000', type=str,  help='text fill color (default black)')
+    p.add_argument('--text-weight', default='bold', type=str,  help='text weight (default bold)')
+    p.add_argument('--text-style', default='normal', type=str,  help='text style (default normal)')
+    p.add_argument('--text-stroke-width', default=8, type=int,  help='text stroke width (default 8)')
+    p.add_argument('--value-gradient', nargs=2, default=['#000000', '#FF0000'], type=str, help='starting and finishing colors for value gradient (default ["#000000", "#FF0000"]')
+    p.add_argument('--value-radius', default=0.2, type=float, help='radius of value gradient circles (default 0.2 Å)')
     args = p.parse_args()
 
     for i in range(len(radii)):
@@ -27,36 +36,42 @@ def parse_arguments(radii):
     radii *= args.atom_size * 0.2
 
     bond_style = SimpleNamespace(
-            color = 'black',
+            color = args.bond_color,
             width = args.bond_width,
             distance = args.bond_distance,
             )
     atom_style = SimpleNamespace(
-            stroke_color = 'black',
+            stroke_color = args.atom_stroke_color,
             stroke = args.atom_border,
             )
     text_style = SimpleNamespace(
             font = args.font_name,
             size = args.font_size,
-            stroke = 8,
-            fill_color = '#000000',
-            stroke_color = '#FFFFFF',
+            stroke = args.text_stroke_width,
+            fill_color = args.text_color,
+            stroke_color = args.text_stroke_color,
             stroke_opacity = 1.0,
             fill_opacity = 1.0,
-            weight = 'bold',
-            style = 'normal',
-            paint_order = 'stroke fill markers'
+            weight = args.text_weight,
+            style = args.text_style,
+            paint_order = 'stroke fill markers',
+            )
+    val_grad = SimpleNamespace(
+            gcolors = args.value_gradient,
+            rvalue = args.value_radius * args.atom_size * 0.2,
             )
     par = SimpleNamespace(text=text_style,
                           atom=atom_style,
                           bond=bond_style,
                           num=args.num,
                           canvas_size=args.canvas_size,
-                          grad=args.gradient)
+                          grad=args.gradient,
+                          val_grad=val_grad)
     return par
 
 
 def linear_grad(gcolors, value):
+    gcolors = np.array([[int(h[i:i+2], 16) for i in (1, 3, 5)] for h in gcolors])
     rgb = gcolors[1]*value + gcolors[0]*(1.0-value)
     rgb = np.round(rgb).astype(int)
     return f'{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}'
@@ -74,9 +89,6 @@ def print_svg(Q, R, bonds, labels, values, radii, colors, colors_ini, colors_fin
     a = par.canvas_size
     afactor = np.array((a, -a, 1.0))
     rcanv = (a*rsize).astype(int)
-
-    gcolors = np.array([[0, 0, 0], [255, 0, 0]])  # TODO
-    rvalues = radii[1] #0.5 * 0.2  # TODO
 
     print("<svg xmlns=\"http://www.w3.org/2000/svg\" "
           "xmlns:xlink=\"http://www.w3.org/1999/xlink\" "
@@ -102,7 +114,7 @@ def print_svg(Q, R, bonds, labels, values, radii, colors, colors_ini, colors_fin
 
     if len(values)>0:
         print(f'    <g id="values"> '
-              f'<circle cx="0" cy="0" r="{rvalues*a}" '
+              f'<circle cx="0" cy="0" r="{par.val_grad.rvalue*a}" '
               f'stroke="{par.atom.stroke_color}" stroke-width="{par.atom.stroke*a/132.317536}"/> '
               '</g>')
         pass
@@ -168,7 +180,7 @@ def print_svg(Q, R, bonds, labels, values, radii, colors, colors_ini, colors_fin
             ri, value = values[I]
             value = value/maxval
             ri = afactor * (ri-center)
-            mycolor = linear_grad(gcolors, value)
+            mycolor = linear_grad(par.val_grad.gcolors, value)
             print(f'  <use fill="#{mycolor}" x="{ri[0]}" y="{ri[1]}" xlink:href="#values"/>')
 
 

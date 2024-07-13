@@ -75,8 +75,32 @@ The same caffeine with options:
 ![vector balls-and-sticks image of caffeine with double bonds and looks nice](figures/caffeine_v3.svg)
 
 
-@iribirii's pseudo-3D mode:
+### @iribirii's pseudo-3D mode:
 ```
 ./mol2svg.py -rs 3.5 -wb 10 -g < input/caffeine.inp > figures/caffeine_v4.svg
 ```
 ![vector balls-and-sticks image of caffeine with a pseudo 3D effect](figures/caffeine_v4.svg)
+
+
+### Extended input
+
+Add values to atoms
+```
+label 1     0.009
+```
+to add them as text:
+```
+./mol2svg.py < input/C3-7-6-7_v2.inp > figures/C3-7-6-7_v2.svg
+```
+![vector balls-and-sticks image with additional text representing value](figures/C3-7-6-7_v2.svg)
+
+
+Add ghost atom coordinates and corresponding values
+```
+value   4.3721492    1.2190677   -0.9878959    0.009
+```
+to add circles representing them:
+```
+./mol2svg.py -rs 2.5  --value-gradient '#00FF00' '#FF0000' < input/C3-7-6-7_v3.inp > figures/C3-7-6-7_v3.svg
+```
+![vector balls-and-sticks image with additional circles colored with respect to a value](figures/C3-7-6-7_v3.svg)

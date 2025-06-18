@@ -60,6 +60,7 @@ Run
 to get help:
 ```
   --num                                                 add atom numbers
+  --elements                                            add element symbols
   --canvas-size CANVAS_SIZE                             basic canvas size (default 80)
   -wa ATOM_BORDER, --atom-border ATOM_BORDER            atom border width (default 5.0)
   -wb BOND_WIDTH, --bond-width BOND_WIDTH               bond width (default 5.0)

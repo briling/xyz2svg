@@ -8,6 +8,7 @@ import numpy as np
 def parse_arguments(radii):
     p = argparse.ArgumentParser()
     p.add_argument('--num', action='store_true',  help='add atom numbers')
+    p.add_argument('--elements', action='store_true',  help='add element symbols')
     p.add_argument('--canvas-size', default=80.0, type=float,  help='basic canvas size')
     p.add_argument('-wa', '--atom-border', default=5.0, type=float,  help='atom border width (default 5.0)')
     p.add_argument('-wb', '--bond-width', default=5.0, type=float,  help='bond line width (default 5.0)')
@@ -28,6 +29,9 @@ def parse_arguments(radii):
     p.add_argument('--value-gradient', nargs=2, default=['#000000', '#FF0000'], type=str, help='starting and finishing colors for value gradient (default ["#000000", "#FF0000"]')
     p.add_argument('--value-radius', default=0.2, type=float, help='radius of value gradient circles (default 0.2 Å)')
     args = p.parse_args()
+
+    if args.num and args.elements:
+        raise RuntimeError
 
     for i in range(len(radii)):
         r = eval(f'args.r{i}')
@@ -60,13 +64,17 @@ def parse_arguments(radii):
             gcolors = args.value_gradient,
             rvalue = args.value_radius * args.atom_size * 0.2,
             )
+
     par = SimpleNamespace(text=text_style,
                           atom=atom_style,
                           bond=bond_style,
                           num=args.num,
+                          elements=args.elements,
                           canvas_size=args.canvas_size,
                           grad=args.gradient,
                           val_grad=val_grad)
+
+
     return par
 
 
@@ -77,7 +85,7 @@ def linear_grad(gcolors, value):
     return f'{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}'
 
 
-def print_svg(Q, R, bonds, labels, values, radii, colors, colors_ini, colors_fin, par):
+def print_svg(Q, R, bonds, labels, values, radii, colors, colors_ini, colors_fin, elements, par):
 
     radmax = max(radii[Q])
     rmin = np.array((min(R[:,0]), min(R[:,1])))
@@ -121,7 +129,7 @@ def print_svg(Q, R, bonds, labels, values, radii, colors, colors_ini, colors_fin
 
     print("  </defs>\n")
 
-    if par.num or labels:
+    if par.num or par.elements or labels:
         print("  <style>\n"
             "  .atnum {\n"
             f"   font-size:{par.text.size*a/80.0}px;font-style:{par.text.style}; font-weight:{par.text.weight};\n"
@@ -165,6 +173,15 @@ def print_svg(Q, R, bonds, labels, values, radii, colors, colors_ini, colors_fin
         for i, ri in enumerate(R):
             ri = afactor * (ri-center)
             print(f'  <text x="{ri[0]}" y="{ri[1]}" class="atnum">{i+1}</text>')
+    if par.elements:
+        print()
+        for qi, ri in zip(Q, R):
+            ri = afactor * (ri-center)
+            q = elements[abs(qi)]
+            if qi < 0:
+                q = f'"{q}"'
+            print(f'  <text x="{ri[0]}" y="{ri[1]}" class="atnum">{q}</text>')
+
     if labels:
         print()
         for i, label in labels:
@@ -281,12 +298,22 @@ def atom_parameters():
                           0x303030, 0x303030,
                           0x303030, 0x303030, 0x303030, 0x303030, 0x303030, 0x303030, 0x303030, 0x303030,
             ] + [0x303030]*23
-    return np.array(radii), np.array(colors), np.array(colors_ini), np.array(colors_fin)
+    elements = ['',
+                'H', 'He',
+                'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne',
+                'Na', 'Mg', 'Al', 'Si', 'P', 'S', 'Cl', 'Ar',
+                'K', 'Ca', 'Sc', 'Ti', 'V', 'Cr', 'Mn', 'Fe', 'Co', 'Ni', 'Cu', 'Zn', 'Ga', 'Ge', 'As', 'Se', 'Br', 'Kr',
+                'Rb', 'Sr', 'Y', 'Zr', 'Nb', 'Mo', 'Tc', 'Ru', 'Rh', 'Pd', 'Ag', 'Cd', 'In', 'Sn', 'Sb', 'Te', 'I', 'Xe',
+                'Cs', 'Ba', 'La', 'Ce', 'Pr', 'Nd', 'Pm', 'Sm', 'Eu', 'Gd', 'Tb', 'Dy', 'Ho', 'Er', 'Tm', 'Yb', 'Lu', 'Hf', 'Ta', 'W', 'Re', 'Os', 'Ir', 'Pt', 'Au', 'Hg', 'Tl', 'Pb', 'Bi', 'Po', 'At', 'Rn',
+                'Fr', 'Ra', 'Ac', 'Th', 'Pa', 'U', 'Np', 'Pu', 'Am', 'Cm', 'Bk', 'Cf', 'Es', 'Fm', 'Md', 'No',
+                ] + [str(i) for i in range(103, 128)]
+
+    return np.array(radii), np.array(colors), np.array(colors_ini), np.array(colors_fin), np.array(elements)
 
 
 if __name__=='__main__':
-    radii, colors, colors_ini, colors_fin = atom_parameters()
+    radii, colors, colors_ini, colors_fin, elements = atom_parameters()
     parameters = parse_arguments(radii)
     Q, R, bonds, labels, values = mol_input()
-    print_svg(Q, R, bonds, labels, values, radii, colors, colors_ini, colors_fin, parameters)
+    print_svg(Q, R, bonds, labels, values, radii, colors, colors_ini, colors_fin, elements, parameters)
 

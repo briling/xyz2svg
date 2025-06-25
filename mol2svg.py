@@ -19,15 +19,17 @@ def parse_arguments(radii):
     p.add_argument('-g',  '--gradient', action='store_true', help='fill atoms with radial gradients')
     p.add_argument('-fs', '--font-size', default=24, type=int, help='font size (default 24)')
     p.add_argument('-fn', '--font-name', default='monospace', type=str, help='font name (default monospace)')
-    p.add_argument('--bond-color', default='black', type=str,  help='bond line color (default black)')
-    p.add_argument('--atom-stroke-color', default='black', type=str,  help='atom stroke color (default black)')
-    p.add_argument('--text-stroke-color', default='#FFFFFF', type=str,  help='text stroke color (default white)')
-    p.add_argument('--text-color', default='#000000', type=str,  help='text fill color (default black)')
+    p.add_argument('--bond-color', default='#000000', type=str,  help='bond line color (default black)')
+    p.add_argument('--atom-stroke-color', default='#000000', type=str,  help='atom stroke color (default black - hex)')
+    p.add_argument('--text-stroke-color', default='#FFFFFF', type=str,  help='text stroke color (default white - hex)')
+    p.add_argument('--text-color', default='#000000', type=str,  help='text fill color (default black - hex)')
     p.add_argument('--text-weight', default='bold', type=str,  help='text weight (default bold)')
     p.add_argument('--text-style', default='normal', type=str,  help='text style (default normal)')
     p.add_argument('--text-stroke-width', default=8, type=int,  help='text stroke width (default 8)')
     p.add_argument('--value-gradient', nargs=2, default=['#000000', '#FF0000'], type=str, help='starting and finishing colors for value gradient (default ["#000000", "#FF0000"]')
     p.add_argument('--value-radius', default=0.2, type=float, help='radius of value gradient circles (default 0.2 Å)')
+    p.add_argument('--fog', action='store_true', help='Enable fog for depth perspective')
+    p.add_argument('--fog-strength', default='0.8', type=float, help='Fog strength (default 0.8, between 0.0 and 1.0)')
     args = p.parse_args()
 
     if args.num and args.elements:
@@ -64,6 +66,10 @@ def parse_arguments(radii):
             gcolors = args.value_gradient,
             rvalue = args.value_radius * args.atom_size * 0.2,
             )
+    fog_style = SimpleNamespace(
+            fog = args.fog,
+            strength = args.fog_strength, 
+            )
 
     par = SimpleNamespace(text=text_style,
                           atom=atom_style,
@@ -72,10 +78,20 @@ def parse_arguments(radii):
                           elements=args.elements,
                           canvas_size=args.canvas_size,
                           grad=args.gradient,
-                          val_grad=val_grad)
+                          val_grad=val_grad,
+                          fog=fog_style,)
 
 
     return par
+
+def blend_fog(hex_colour, fog_rgb, strength):
+    """
+    Blend the given colour with the fog colour based on the strength.
+    """
+    strength = strength**2
+    rgb = np.array([int(hex_colour[i:i+2], 16) for i in (1,3,5)])
+    blended = ( 1 - strength ) * rgb + strength * fog_rgb
+    return "#{:02x}{:02x}{:02x}".format(*blended.astype(int))
 
 
 def linear_grad(gcolors, value):
@@ -93,6 +109,13 @@ def print_svg(Q, R, bonds, labels, values, radii, colors, colors_ini, colors_fin
     center = np.array((rmin[0]-radmax, rmax[1]+radmax, 0.0))
     rsize = rmax - rmin + 2*radmax
     z_order = np.argsort(R[:,2])
+
+    if par.fog.fog:
+        zrange = max(R[:,2].max() - R[:,2].min(), 1e-6)
+        fog_factors = par.fog.strength * (R[:,2] - R[:,2].max()) / zrange
+        fog_rgb = np.array([255, 255, 255])
+    else:
+        fog_factors = np.zeros(len(R))
 
     a = par.canvas_size
     afactor = np.array((a, -a, 1.0))
@@ -119,6 +142,7 @@ def print_svg(Q, R, bonds, labels, values, radii, colors, colors_ini, colors_fin
                       f'<circle cx="0" cy="0" r="{abs(radii[q])*a}" '
                       f'fill="#{colors[q]:06x}" stroke="{par.atom.stroke_color}" stroke-width="{par.atom.stroke*a/132.317536}"/> '
                       '</g>')
+       
 
     if len(values)>0:
         print(f'    <g id="values"> '
@@ -145,7 +169,16 @@ def print_svg(Q, R, bonds, labels, values, radii, colors, colors_ini, colors_fin
 
 
         ri = afactor * (R[I]-center)
-        print(f'  <use x="{ri[0]}" y="{ri[1]}" xlink:href="#atom{Q[I]}"/>')
+        if par.fog.fog and not par.grad:
+            fog_color = blend_fog(f'#{colors[Q[I]]:06x}', fog_rgb, fog_factors[I])
+            stroke_color = blend_fog(par.atom.stroke_color, fog_rgb, fog_factors[I])
+            print(f'  <circle cx="{ri[0]}" cy="{ri[1]}" '
+              f'r="{abs(radii[Q[I]])*a}" '
+              f'fill="{fog_color}" '
+              f'stroke="{stroke_color}" '
+              f'stroke-width="{par.atom.stroke*a/132.317536}"/>')
+        else:
+            print(f'  <use x="{ri[0]}" y="{ri[1]}" xlink:href="#atom{Q[I]}"/>')
 
         for J in z_order[i+1:]:
 
@@ -159,14 +192,17 @@ def print_svg(Q, R, bonds, labels, values, radii, colors, colors_ini, colors_fin
 
             ri = afactor * (R[I]-center + rij*abs(radii[Q[I]]))
             rj = afactor * (R[J]-center - rij*abs(radii[Q[J]]))
-
+            if par.fog.fog and not par.grad:
+                stroke_color = blend_fog(par.bond.color, fog_rgb, (fog_factors[I] + fog_factors[J]) / 2)
+            else:
+                stroke_color = par.bond.color
             #print('xxx', *R[I], *R[J])
             for ib in range(-abs(nb)+1, abs(nb), 2):
                 x1 = ri[0] + rij[1]*ib*a*par.bond.distance
                 y1 = ri[1] + rij[0]*ib*a*par.bond.distance
                 x2 = rj[0] + rij[1]*ib*a*par.bond.distance
                 y2 = rj[1] + rij[0]*ib*a*par.bond.distance
-                print(f'    <line x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" stroke="{par.bond.color}" stroke-width="{par.bond.width*a/132.317536}"{dash}/>')
+                print(f'    <line x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" stroke="{stroke_color}" stroke-width="{par.bond.width*a/132.317536}"{dash}/>')
 
     if par.num:
         print()
@@ -251,9 +287,9 @@ def atom_parameters():
                   1.40, 1.40
            ] + [1.40]*23
     colors = [ 0x000000,
-      0x808080, 0xA0A0A0,
+      0xd1d1d1, 0xA0A0A0,
       0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xC0C0C0, 0x0000FF, 0xFF0000, 0xFF00FF, 0xA0A0A0,
-      0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0x090909, 0x0F0B0B, 0xF0F000, 0x00F000, 0xA0A0A0,
+      0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0x090909, 0xfcab28, 0xF0F000, 0x00F000, 0xA0A0A0,
       0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0,
       0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0,
       0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0,

@@ -82,6 +82,12 @@ The same caffeine with options:
 ```
 ![vector balls-and-sticks image of caffeine with a pseudo 3D effect](figures/caffeine_v4.svg)
 
+### fog depth perspective option
+```
+./mol2svg.py -wb 10 --fog -wa 4 < input/caffeine.inp > figures/caffeine_v5.svg
+```
+![vector balls-and-sticks image of caffeine with fog depth perspective](figures/caffeine_v5.svg)
+- currently incompatible with gradiented 3D mode
 
 ### Extended input
 

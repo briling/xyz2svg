@@ -17,9 +17,11 @@ def parse_arguments(radii):
     for i in range(len(radii)):
         p.add_argument(f'-r{i}', default=None, type=float, help=('-r{q} sets radius for element {q} in Å' if i==6 else argparse.SUPPRESS))
     p.add_argument('-g',  '--gradient', action='store_true', help='fill atoms with radial gradients')
+    p.add_argument('--fog', action='store_true', help='enable fog for depth perspective')
+    p.add_argument('--fog-strength', default='0.8', type=float, help='fog strength (default 0.8, between 0.0 and 1.0)')
     p.add_argument('-fs', '--font-size', default=24, type=int, help='font size (default 24)')
     p.add_argument('-fn', '--font-name', default='monospace', type=str, help='font name (default monospace)')
-    p.add_argument('--bond-color', default='#000000', type=str,  help='bond line color (default black)')
+    p.add_argument('--bond-color', default='#000000', type=str,  help='bond line color (default black - hex)')
     p.add_argument('--atom-stroke-color', default='#000000', type=str,  help='atom stroke color (default black - hex)')
     p.add_argument('--text-stroke-color', default='#FFFFFF', type=str,  help='text stroke color (default white - hex)')
     p.add_argument('--text-color', default='#000000', type=str,  help='text fill color (default black - hex)')
@@ -28,8 +30,6 @@ def parse_arguments(radii):
     p.add_argument('--text-stroke-width', default=8, type=int,  help='text stroke width (default 8)')
     p.add_argument('--value-gradient', nargs=2, default=['#000000', '#FF0000'], type=str, help='starting and finishing colors for value gradient (default ["#000000", "#FF0000"]')
     p.add_argument('--value-radius', default=0.2, type=float, help='radius of value gradient circles (default 0.2 Å)')
-    p.add_argument('--fog', action='store_true', help='Enable fog for depth perspective')
-    p.add_argument('--fog-strength', default='0.8', type=float, help='Fog strength (default 0.8, between 0.0 and 1.0)')
     args = p.parse_args()
 
     if args.num and args.elements:
@@ -68,8 +68,12 @@ def parse_arguments(radii):
             )
     fog_style = SimpleNamespace(
             fog = args.fog,
-            strength = args.fog_strength, 
+            strength = args.fog_strength,
             )
+
+    if not (0<fog_style.strength<1):
+        print('warning: using default fog strength value')
+        fog_style.strength = 0.8
 
     par = SimpleNamespace(text=text_style,
                           atom=atom_style,
@@ -142,7 +146,7 @@ def print_svg(Q, R, bonds, labels, values, radii, colors, colors_ini, colors_fin
                       f'<circle cx="0" cy="0" r="{abs(radii[q])*a}" '
                       f'fill="#{colors[q]:06x}" stroke="{par.atom.stroke_color}" stroke-width="{par.atom.stroke*a/132.317536}"/> '
                       '</g>')
-       
+
 
     if len(values)>0:
         print(f'    <g id="values"> '

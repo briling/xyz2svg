@@ -68,6 +68,20 @@ to get help:
   -rs ATOM_SIZE, --atom_size ATOM_SIZE                  scaling factor for atom radii
   -r%d ATOM_%d_RADIUS                                   sets basic radius for a specific element (in Å)
   -g, --gradient                                        fill atoms with radial gradients (pseudo-3D mode)
+  --fog                                                 enable fog for depth perspective
+  --fog-strength FOG_STRENGTH                           fog strength (default 0.8, between 0.0 and 1.0)
+  --light-hydrogen                                      use a lighter color for H
+  -fs FONT_SIZE, --font-size FONT_SIZE                  font size (default 24)
+  -fn FONT_NAME, --font-name FONT_NAME                  font name (default monospace)
+  --bond-color BOND_COLOR                               bond line color (default black - hex)
+  --atom-stroke-color ATOM_STROKE_COLOR                 atom stroke color (default black - hex)
+  --text-stroke-color TEXT_STROKE_COLOR                 text stroke color (default white - hex)
+  --text-color TEXT_COLOR                               text fill color (default black - hex)
+  --text-weight TEXT_WEIGHT                             text weight (default bold)
+  --text-style TEXT_STYLE                               text style (default normal)
+  --text-stroke-width TEXT_STROKE_WIDTH                 text stroke width (default 8)
+  --value-gradient VALUE_GRADIENT VALUE_GRADIENT        starting and finishing colors for value gradient (default ["#000000", "#FF0000"]
+  --value-radius VALUE_RADIUS                           radius of value gradient circles (default 0.2 Å)
 ```
 The same caffeine with options:
 ```

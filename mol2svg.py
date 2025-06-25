@@ -19,6 +19,7 @@ def parse_arguments(radii):
     p.add_argument('-g',  '--gradient', action='store_true', help='fill atoms with radial gradients')
     p.add_argument('--fog', action='store_true', help='enable fog for depth perspective')
     p.add_argument('--fog-strength', default='0.8', type=float, help='fog strength (default 0.8, between 0.0 and 1.0)')
+    p.add_argument('--light-hydrogen', action='store_true', help='use a lighter color for H')
     p.add_argument('-fs', '--font-size', default=24, type=int, help='font size (default 24)')
     p.add_argument('-fn', '--font-name', default='monospace', type=str, help='font name (default monospace)')
     p.add_argument('--bond-color', default='#000000', type=str,  help='bond line color (default black - hex)')
@@ -83,7 +84,8 @@ def parse_arguments(radii):
                           canvas_size=args.canvas_size,
                           grad=args.gradient,
                           val_grad=val_grad,
-                          fog=fog_style,)
+                          fog=fog_style,
+                          light_hydrogen=args.light_hydrogen)
 
 
     return par
@@ -291,7 +293,7 @@ def atom_parameters():
                   1.40, 1.40
            ] + [1.40]*23
     colors = [ 0x000000,
-      0xd1d1d1, 0xA0A0A0,
+      0x808080, 0xA0A0A0,
       0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xC0C0C0, 0x0000FF, 0xFF0000, 0xFF00FF, 0xA0A0A0,
       0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0x090909, 0xfcab28, 0xF0F000, 0x00F000, 0xA0A0A0,
       0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0, 0xA0A0A0,
@@ -354,6 +356,8 @@ def atom_parameters():
 if __name__=='__main__':
     radii, colors, colors_ini, colors_fin, elements = atom_parameters()
     parameters = parse_arguments(radii)
+    if parameters.light_hydrogen:
+         colors[1] = 0xd1d1d1
     Q, R, bonds, labels, values = mol_input()
     print_svg(Q, R, bonds, labels, values, radii, colors, colors_ini, colors_fin, elements, parameters)
 

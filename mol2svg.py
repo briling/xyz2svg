@@ -90,6 +90,7 @@ def parse_arguments(radii):
 
     return par
 
+
 def blend_fog(hex_colour, fog_rgb, strength):
     """
     Blend the given colour with the fog colour based on the strength.
@@ -246,8 +247,10 @@ def print_svg(Q, R, bonds, labels, values, radii, colors, colors_ini, colors_fin
 
     print('</svg>')
 
+
 def mol_input():
-    data = [*map(lambda x: x.strip().split(), sys.stdin.readlines())]
+    data = map(lambda x: x.strip().split(), sys.stdin.readlines())
+    data = [*filter(lambda x: len(x)>0, data)]
 
     Q = []
     R = []

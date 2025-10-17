@@ -20,6 +20,7 @@ def parse_arguments(radii):
     p.add_argument('--fog', action='store_true', help='enable fog for depth perspective')
     p.add_argument('--fog-strength', default='0.8', type=float, help='fog strength (default 0.8, between 0.0 and 1.0)')
     p.add_argument('--light-hydrogen', action='store_true', help='use a lighter color for H')
+    p.add_argument('--no-H', action='store_true', help='hide hydrogens bonded to carbon')
     p.add_argument('-fs', '--font-size', default=24, type=int, help='font size (default 24)')
     p.add_argument('-fn', '--font-name', default='monospace', type=str, help='font name (default monospace)')
     p.add_argument('--bond-color', default='#000000', type=str,  help='bond line color (default black - hex)')
@@ -85,7 +86,9 @@ def parse_arguments(radii):
                           grad=args.gradient,
                           val_grad=val_grad,
                           fog=fog_style,
-                          light_hydrogen=args.light_hydrogen)
+                          light_hydrogen=args.light_hydrogen,
+                          no_H=args.no_H
+                          )
 
 
     return par
@@ -106,6 +109,17 @@ def linear_grad(gcolors, value):
     rgb = np.round(rgb).astype(int)
     return f'{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}'
 
+def should_skip_atom(atom_idx, Q, bonds, no_H):
+    """Check if atom should be hidden (H bonded to C when no_H flag is set)."""
+    if not no_H:
+        return False
+    if abs(Q[atom_idx]) != 1:  # Not hydrogen
+        return False
+    # Check if bonded to carbon (element 6)
+    for j, bond_order in enumerate(bonds[atom_idx]):
+        if bond_order != 0 and abs(Q[j]) == 6:
+            return True
+    return False
 
 def print_svg(Q, R, bonds, labels, values, radii, colors, colors_ini, colors_fin, elements, par):
 
@@ -173,6 +187,8 @@ def print_svg(Q, R, bonds, labels, values, radii, colors, colors_ini, colors_fin
 
     for i, I in enumerate(z_order):
 
+        if should_skip_atom(I, Q, bonds, par.no_H):
+            continue
 
         ri = afactor * (R[I]-center)
         if par.fog.fog and not par.grad:
@@ -187,6 +203,9 @@ def print_svg(Q, R, bonds, labels, values, radii, colors, colors_ini, colors_fin
             print(f'  <use x="{ri[0]}" y="{ri[1]}" xlink:href="#atom{Q[I]}"/>')
 
         for J in z_order[i+1:]:
+            
+            if should_skip_atom(I, Q, bonds, par.no_H) or should_skip_atom(J, Q, bonds, par.no_H):
+                continue
 
             nb = bonds[I,J]
             if nb==0:

@@ -115,10 +115,15 @@ def should_skip_atom(atom_idx, Q, bonds, no_H):
         return False
     if abs(Q[atom_idx]) != 1:  # Not hydrogen
         return False
-    # Check if bonded to carbon (element 6)
+    # Count bonds and check if all are to carbon
+    bonded_atoms = []
     for j, bond_order in enumerate(bonds[atom_idx]):
-        if bond_order != 0 and abs(Q[j]) == 6:
-            return True
+        if bond_order != 0:
+            bonded_atoms.append(j)
+    
+    # Only hide if H has exactly one bond and it's to carbon
+    if len(bonded_atoms) == 1 and abs(Q[bonded_atoms[0]]) == 6:
+        return True
     return False
 
 def print_svg(Q, R, bonds, labels, values, radii, colors, colors_ini, colors_fin, elements, par):

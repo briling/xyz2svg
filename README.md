@@ -71,6 +71,7 @@ to get help:
   --fog                                                 enable fog for depth perspective
   --fog-strength FOG_STRENGTH                           fog strength (default 0.8, between 0.0 and 1.0)
   --light-hydrogen                                      use a lighter color for H
+  --hide-H                                              hide C–H hydrogens (optionally specifying 1-indexed atom indices to keep, e.g. --hide-H 5 12)
   --cpk                                                 use CPK coloring scheme
   -fs FONT_SIZE, --font-size FONT_SIZE                  font size (default 24)
   -fn FONT_NAME, --font-name FONT_NAME                  font name (default monospace)
@@ -104,6 +105,18 @@ The same caffeine with options:
 ![vector balls-and-sticks image of fullerene with fog depth perspective](figures/C60-Ih.svg)
 
 - currently incompatible with gradiented 3D mode
+
+
+### @aligfellow's option to hide C–H hydrodens:
+```
+./mol2svg.py -wb 10 --fog --fog-strength 0.9 -wa 4 --hide-H
+```
+with an optional list of relevant hydrogens to keep:
+```
+./mol2svg.py -wb 10 --fog --fog-strength 0.9 -wa 4 --hide-H 68
+```
+![balls-and-sticks image of catalytic center structure](figures/502628045-acbd9488-c32d-4c8b-8ffe-e062d2cd986e.png)
+
 
 ### Extended input
 

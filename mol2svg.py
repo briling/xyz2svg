@@ -20,6 +20,7 @@ def parse_arguments(radii):
     p.add_argument('--fog', action='store_true', help='enable fog for depth perspective')
     p.add_argument('--fog-strength', default='0.8', type=float, help='fog strength (default 0.8, between 0.0 and 1.0)')
     p.add_argument('--light-hydrogen', action='store_true', help='use a lighter color for H')
+    p.add_argument('--cpk', action='store_true', help='use CPK coloring scheme')
     p.add_argument('-fs', '--font-size', default=24, type=int, help='font size (default 24)')
     p.add_argument('-fn', '--font-name', default='monospace', type=str, help='font name (default monospace)')
     p.add_argument('--bond-color', default='#000000', type=str,  help='bond line color (default black - hex)')
@@ -85,7 +86,9 @@ def parse_arguments(radii):
                           grad=args.gradient,
                           val_grad=val_grad,
                           fog=fog_style,
-                          light_hydrogen=args.light_hydrogen)
+                          light_hydrogen=args.light_hydrogen,
+                          cpk=args.cpk
+                          )
 
 
     return par
@@ -277,6 +280,25 @@ def mol_input():
 
     return np.array(Q), np.array(R), bonds, labels, values
 
+def get_cpk_colors():
+    """Returns CPK (Corey-Pauling-Koltun) color scheme for elements."""
+    return np.array([
+        0x999999,
+        0xFFFFFF, 0xD9FFFF,
+        0xCC80FF, 0xC2FF00, 0xFFB5B5, 0x909090, 0x3050F8, 0xFF0D0D, 0x90E050, 0xB3E3F5,
+        0xAB5CF2, 0x8AFF00, 0xBFA6A6, 0xF0C8A0, 0xFF8000, 0xFFFF30, 0x1FF01F, 0x80D1E3,
+        0x8F40D4, 0x3DFF00, 0xE6E6E6, 0xBFC2C7, 0xA6A6AB, 0x8A99C7, 0x9C7AC7, 0xE06633, 0xF090A0, 0x50D050,
+        0xC88033, 0x7D80B0, 0xC28F8F, 0x668F8F, 0xBD80E3, 0xFFA100, 0xA62929, 0x5CB8D1,
+        0x702EB0, 0x00FF00, 0x94FFFF, 0x94E0E0, 0x73C2C9, 0x54B5B5, 0x3B9E9E, 0x248F8F, 0x0A7D8C, 0x006985,
+        0xC0C0C0, 0xFFD98F, 0xA67573, 0x668080, 0x9E63B5, 0xD47A00, 0x940094, 0x429EB0,
+        0x57178F, 0x00C900, 0x70D4FF, 0xFFFFC7, 0xD9FFC7, 0xC7FFC7, 0xA3FFC7, 0x8FFFC7, 0x61FFC7,
+                            0x45FFC7, 0x30FFC7, 0x1FFFC7, 0x00FF9C, 0x00E675, 0x00D452, 0x00BF38,
+                            0x00AB24, 0x4DC2FF, 0x4DA6FF, 0x2194D6, 0x267DAB, 0x266696, 0x175487, 0xD0D0E0,
+        0xFFD123, 0xB8B8D0, 0xA6544D, 0x575961, 0x9E4FB5, 0xAB5C00, 0x754F45, 0x428296, 0x420066,
+                            0x007D00, 0x70ABFA, 0x00BAFF, 0x00A1FF, 0x008FFF, 0x0080FF, 0x006BFF,
+                            0x545CF2, 0x785CE3,
+                            0x8A4FE3, 0xA136D4, 0xB31FD4, 0xB31FBA, 0xB30DA6, 0xBD0D87, 0xC70066, 0xCC0059,
+    ] + [0xA0A0A0]*23)
 
 def atom_parameters():
     radii = [ 0.0,
@@ -359,6 +381,8 @@ def atom_parameters():
 if __name__=='__main__':
     radii, colors, colors_ini, colors_fin, elements = atom_parameters()
     parameters = parse_arguments(radii)
+    if parameters.cpk:
+        colors = get_cpk_colors()
     if parameters.light_hydrogen:
          colors[1] = 0xd1d1d1
     Q, R, bonds, labels, values = mol_input()

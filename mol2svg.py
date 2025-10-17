@@ -20,6 +20,7 @@ def parse_arguments(radii):
     p.add_argument('--fog', action='store_true', help='enable fog for depth perspective')
     p.add_argument('--fog-strength', default='0.8', type=float, help='fog strength (default 0.8, between 0.0 and 1.0)')
     p.add_argument('--light-hydrogen', action='store_true', help='use a lighter color for H')
+    p.add_argument('--hide-H', nargs='*', type=int, default=None, metavar='EXCEPT', help='hide C-H hydrogens (optionally specifying 1-indexed atom indices to keep: --hide-H 5 12)')
     p.add_argument('--cpk', action='store_true', help='use CPK coloring scheme')
     p.add_argument('-fs', '--font-size', default=24, type=int, help='font size (default 24)')
     p.add_argument('-fn', '--font-name', default='monospace', type=str, help='font name (default monospace)')
@@ -87,6 +88,7 @@ def parse_arguments(radii):
                           val_grad=val_grad,
                           fog=fog_style,
                           light_hydrogen=args.light_hydrogen,
+                          hide_H=args.hide_H
                           cpk=args.cpk
                           )
 
@@ -110,6 +112,41 @@ def linear_grad(gcolors, value):
     rgb = np.round(rgb).astype(int)
     return f'{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}'
 
+def should_skip_atom(atom_idx, Q, bonds, hide_H_list):
+    """
+    Check if atom should be hidden based on --hide-H flag.
+    Only hides H atoms with exactly one bond to carbon.
+    Atoms in hide_H_list exceptions are never hidden.
+    
+    Args:
+        atom_idx: 0-indexed atom position
+        Q: array of atomic numbers
+        bonds: bond matrix
+        hide_H_list: None (don't hide), [] (hide all C-H), or list of 1-indexed exceptions
+    
+    Returns:
+        True if atom should be skipped, False otherwise
+    """
+    if hide_H_list is None:  # --hide-H flag not used
+        return False
+    
+    if abs(Q[atom_idx]) != 1:  # Not hydrogen
+        return False
+
+    # Don't hide atoms explicitly listed in exceptions (1-indexed)
+    if (atom_idx + 1) in hide_H_list:
+        return False
+    
+    # Count bonds to this hydrogen
+    bonded_atoms = []
+    for j, bond_order in enumerate(bonds[atom_idx]):
+        if bond_order != 0:
+            bonded_atoms.append(j)
+    
+    # Only hide if H has exactly one bond and it's to carbon
+    if len(bonded_atoms) == 1 and abs(Q[bonded_atoms[0]]) == 6:
+        return True
+    return False
 
 def print_svg(Q, R, bonds, labels, values, radii, colors, colors_ini, colors_fin, elements, par):
 
@@ -177,6 +214,8 @@ def print_svg(Q, R, bonds, labels, values, radii, colors, colors_ini, colors_fin
 
     for i, I in enumerate(z_order):
 
+        if should_skip_atom(I, Q, bonds, par.hide_H):
+            continue
 
         ri = afactor * (R[I]-center)
         if par.fog.fog and not par.grad:
@@ -191,6 +230,9 @@ def print_svg(Q, R, bonds, labels, values, radii, colors, colors_ini, colors_fin
             print(f'  <use x="{ri[0]}" y="{ri[1]}" xlink:href="#atom{Q[I]}"/>')
 
         for J in z_order[i+1:]:
+            
+            if should_skip_atom(I, Q, bonds, par.hide_H) or should_skip_atom(J, Q, bonds, par.hide_H):
+                continue
 
             nb = bonds[I,J]
             if nb==0:

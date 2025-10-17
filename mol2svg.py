@@ -191,7 +191,7 @@ def print_svg(Q, R, bonds, labels, values, radii, colors, colors_ini, colors_fin
             nb = bonds[I,J]
             if nb==0:
                 continue
-            dash = '' if nb > 0 else ' stroke-dasharray="10,5"'
+            dash = '' if nb > 0 else ' stroke-dasharray="6,10"'
 
             rij = R[J]-R[I]
             rij *= 0.666 / np.linalg.norm(rij)

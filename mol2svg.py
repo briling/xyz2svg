@@ -195,13 +195,14 @@ def print_svg(Q, R, bonds, labels, values, radii, colors, colors_ini, colors_fin
             nb = bonds[I,J]
             if nb==0:
                 continue
-            dash = '' if nb > 0 else ' stroke-dasharray="10,5"'
+            dash = '' if nb > 0 else ' stroke-dasharray="6,10"'
 
             rij = R[J]-R[I]
             rij *= 0.666 / np.linalg.norm(rij)
 
-            ri = afactor * (R[I]-center + rij*abs(radii[Q[I]]))
-            rj = afactor * (R[J]-center - rij*abs(radii[Q[J]]))
+            cap_offset = par.bond.width / ( 2 * 132.317536) # so that the bond does not significantly overlap the atom circle
+            ri = afactor * (R[I]-center + rij*(abs(radii[Q[I]]) + cap_offset))
+            rj = afactor * (R[J]-center - rij*(abs(radii[Q[J]]) + cap_offset))
             if par.fog.fog and not par.grad:
                 stroke_color = blend_fog(par.bond.color, fog_rgb, (fog_factors[I] + fog_factors[J]) / 2)
             else:
@@ -212,7 +213,7 @@ def print_svg(Q, R, bonds, labels, values, radii, colors, colors_ini, colors_fin
                 y1 = ri[1] + rij[0]*ib*a*par.bond.distance
                 x2 = rj[0] + rij[1]*ib*a*par.bond.distance
                 y2 = rj[1] + rij[0]*ib*a*par.bond.distance
-                print(f'    <line x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" stroke="{stroke_color}" stroke-width="{par.bond.width*a/132.317536}"{dash}/>')
+                print(f'    <line x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" stroke="{stroke_color}" stroke-width="{par.bond.width*a/132.317536}" stroke-linecap="round"{dash}/>')
 
     if par.num:
         print()

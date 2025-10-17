@@ -71,6 +71,7 @@ to get help:
   --fog                                                 enable fog for depth perspective
   --fog-strength FOG_STRENGTH                           fog strength (default 0.8, between 0.0 and 1.0)
   --light-hydrogen                                      use a lighter color for H
+  --cpk                                                 use CPK coloring scheme
   -fs FONT_SIZE, --font-size FONT_SIZE                  font size (default 24)
   -fn FONT_NAME, --font-name FONT_NAME                  font name (default monospace)
   --bond-color BOND_COLOR                               bond line color (default black - hex)
